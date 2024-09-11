@@ -52,16 +52,15 @@ char* inputMsg(size_t *tam) {
 
 int main() {
     int p, q, d, e, phi;
+    long int n;
     wchar_t* msg = malloc(TAM_MAX * sizeof(wchar_t));
     size_t tam_msg;
     mpz_t pot;
+    FILE* output;
     char* tmp = NULL;
-    long int n;
-    int i;
 
     setlocale(LC_ALL, "");
-
-    mpz_init(pot);
+    output = fopen("output.txt", "w");
 
     input(&p, L"p");
     input(&q, L"q");
@@ -73,28 +72,29 @@ int main() {
     mbstowcs(msg, tmp, tam_msg);
     tam_msg = wcslen(msg) - 1;
     
-    wprintf(L"\n");
-    for (i = 0; i < tam_msg; i++) {
+    mpz_init(pot);
+    fwprintf(output, L"Texto criptografado:\n");
+    for (int i = 0; i < tam_msg; i++) {
         mpz_set_ui(pot, msg[i]);
         mpz_pow_ui(pot, pot, d);
         mpz_mod_ui(pot, pot, n);
         msg[i] = mpz_get_si(pot);
-        wprintf(L"%lc", msg[i]);
+        fwprintf(output, L"%x", msg[i]);
     }
-    wprintf(L"\n");
+    fwprintf(output, L"\n\nTexto descriptografado:\n");
 
     for (int i = 0; i < tam_msg; i++) {
         mpz_set_ui(pot, msg[i]);
         mpz_pow_ui(pot, pot, e);
         mpz_mod_ui(pot, pot, n);
         msg[i] = mpz_get_si(pot);
-        wprintf(L"%lc", msg[i]);
+        fwprintf(output, L"%lc", msg[i]);
     }
-    wprintf(L"\n");
 
     mpz_clear(pot);
     free(tmp);
     free(msg);
+    fclose(output);
 
     return 0;
 }
