@@ -1,4 +1,5 @@
-/* Autor: Fernando de Barros Castro - UFPR
+/* 
+ * Autor: Fernando de Barros Castro - UFPR
  * Data: 
  * Descricao: Implementacao do algoritmo de chave pública RSA
  */
@@ -21,8 +22,8 @@ int extended_gcd(int a, int b) {
     new_cofb = 1;
     while (b != 0) {
         div = a / b;
-        aux1 = old_cofa + div * new_cofa;
-        aux2 = old_cofb + div * new_cofb;
+        aux1 = old_cofa - div * new_cofa;
+        aux2 = old_cofb - div * new_cofb;
         old_cofa = new_cofa;
         old_cofb = new_cofb;
         new_cofa = aux1;
@@ -65,25 +66,29 @@ int main() {
     input(&p, L"p");
     input(&q, L"q");
     input(&d, L"d");
-    tmp = inputMsg(&tam_msg);
-    e = extended_gcd((p - 1) * (q - 1), d);
+    phi = (p - 1) * (q - 1);
     n = p * q;
+    tmp = inputMsg(&tam_msg);
+    e = extended_gcd(phi, d);
+    while (e < 0) {
+        e += phi;
+    }
 
     mbstowcs(msg, tmp, tam_msg);
     tam_msg = wcslen(msg) - 1;
     
     mpz_init(pot);
     fwprintf(output, L"Texto criptografado:\n");
-    for (int i = 0; i < tam_msg; i++) {
+    for (size_t i = 0; i < tam_msg; i++) {
         mpz_set_ui(pot, msg[i]);
         mpz_pow_ui(pot, pot, d);
         mpz_mod_ui(pot, pot, n);
         msg[i] = mpz_get_si(pot);
-        fwprintf(output, L"%x", msg[i]);
+        fwprintf(output, L"%02x", msg[i]);
     }
     fwprintf(output, L"\n\nTexto descriptografado:\n");
 
-    for (int i = 0; i < tam_msg; i++) {
+    for (size_t i = 0; i < tam_msg; i++) {
         mpz_set_ui(pot, msg[i]);
         mpz_pow_ui(pot, pot, e);
         mpz_mod_ui(pot, pot, n);
