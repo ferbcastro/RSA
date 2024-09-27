@@ -1,13 +1,15 @@
-#include <locale.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <gmp.h>
+#include <time.h>
 #include <wchar.h>
 #include <getopt.h>
 #include <assert.h>
+#include <locale.h>
 
 #define MAX_BLOCKS 1024
+#define SIZE_UNSIGNED_LONG 8
 
 typedef unsigned long long ull;
 
@@ -16,27 +18,16 @@ typedef struct PublicKey {
     ull n;
 } PublicKey;
 
-ull powMod (ull a, ull b, ull m) {
-    mpz_t base, exp, mod;
-
-    mpz_init(base);
-    mpz_init(exp);
-    mpz_init(mod);
-    mpz_set_ui(base, a);
-    mpz_set_ui(exp, b);
-    mpz_set_ui(mod, m);
-    mpz_powm(mod, base, exp, mod);
-
-    return mpz_get_si(mod);
-}
-
 int main(int argc, char** argv) {
-    char* str;
-    size_t sizeStr;
+    char* str = NULL;
+    size_t sizeStr = 0;
     int opt;
     PublicKey pub;
 
-    while ((opt = getopt(argc, argv, "n:d:"))) {
+    srand(time(NULL));
+    setlocale(LC_ALL, "");
+
+    while ((opt = getopt(argc, argv, "n:d:")) != -1) {
         switch (opt) {
             case 'n':
                 pub.n = strtol(optarg, NULL, 10);
@@ -49,35 +40,41 @@ int main(int argc, char** argv) {
         }
     }
 
-    ull blocks[MAX_BLOCKS];
-    size_t aux, blockSize = sizeof(ull);
-    puts("Insira a mensagem: ");
-    getline(&str, &sizeStr, stdin);
-    
-    int strIt = 0, blocksIt = 0;
-    while (strIt < sizeStr) {
-        blocks[blocksIt] = 0;
-        aux = blockSize;
-        while (aux > 0 && blocks[blocksIt] < pub.n) {
-            blocks[blocksIt] |= str[strIt];
-            blocks[blocksIt] = blocks[blocksIt] << 8;
-            strIt++;
-            aux -= 8;
-        }
-        blocksIt++;
-    }
+    printf("\n Insira sua mensagem: ");
+    sizeStr = getline(&str, &sizeStr, stdin);
+    FILE* output = fopen("output.txt", "w");
+    unsigned long tmp;
+    char *auxStr, bytes, aleat = 1;
+    unsigned int it = 0, ini;
+    mpz_t base, exp, mod;
 
-    FILE* output = fopen("output.txt", "r");
-    assert(output != NULL);
-    unsigned int tmp;
-    for (int i = 0; i < blocksIt; i++) {
-        blocks[i] = powMod(blocks[i], pub.d, pub.n);
-        tmp = (unsigned int)(blocks[i] & 0xFFFFFFFF);
-        fprintf(output, "%x", tmp);
-        tmp = (unsigned int)(blocks[i] >> 32);
-        fprintf(output, "%x", tmp);
+    mpz_init(base);
+    mpz_init(exp);
+    mpz_init(mod);
+    mpz_set_ui(exp, pub.d);
+    mpz_set_ui(mod, pub.n);
+    while (it < sizeStr) {
+        tmp = 0;
+        tmp |= str[it];
+        it++;
+        while (tmp < pub.n && it < sizeStr && aleat) {
+            tmp = tmp << 8;
+            tmp |= str[it];
+            it++;
+        }
+
+        if (tmp >= pub.n) {
+            tmp = tmp >> 8;
+            it--;
+        }
+
+        mpz_set_ui(base, tmp);
+        mpz_powm(base, base, exp, mod);
+        auxStr = mpz_get_str(NULL, 16, base);
+        fprintf(output, "%s:", auxStr);
+        free(auxStr);
     }
+    printf("\n");
 
     free(str);
-    fclose(output);
 }
