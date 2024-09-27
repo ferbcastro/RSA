@@ -1,5 +1,7 @@
 #include <wchar.h>
 
+#define NUM_CODIGOS 120
+
 struct contSimbolo {
     wchar_t c;
     int qtd;
@@ -23,3 +25,6 @@ struct fila {
     struct nodo *ini;
     int tam;
 };
+
+char codifica(wchar_t* string, int* cods);
+int cod(wchar_t caracter);

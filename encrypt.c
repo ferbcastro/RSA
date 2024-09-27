@@ -7,9 +7,9 @@
 #include <getopt.h>
 #include <assert.h>
 #include <locale.h>
+#include "codificacao.h"
 
-#define MAX_BLOCKS 1024
-#define SIZE_UNSIGNED_LONG 8
+int codigos[NUM_CODIGOS];
 
 typedef unsigned long long ull;
 
@@ -20,13 +20,14 @@ typedef struct PublicKey {
 
 int main(int argc, char** argv) {
     char* str = NULL;
+    wchar_t* widestr;
     size_t sizeStr = 0;
-    int opt;
     PublicKey pub;
 
     srand(time(NULL));
     setlocale(LC_ALL, "");
 
+    int opt;
     while ((opt = getopt(argc, argv, "n:d:")) != -1) {
         switch (opt) {
             case 'n':
@@ -35,36 +36,62 @@ int main(int argc, char** argv) {
             case 'd':
                 pub.d = strtol(optarg, NULL, 10);
                 break;
+            case '?':
             default:
-                break;
+                return 1;
         }
     }
-
-    printf("\n Insira sua mensagem: ");
-    sizeStr = getline(&str, &sizeStr, stdin);
-    FILE* output = fopen("output.txt", "w");
-    unsigned long tmp;
-    char *auxStr, bytes, aleat = 1;
-    unsigned int it = 0, ini;
     mpz_t base, exp, mod;
+    char bits;
+    char *auxStr;
 
     mpz_init(base);
     mpz_init(exp);
     mpz_init(mod);
     mpz_set_ui(exp, pub.d);
     mpz_set_ui(mod, pub.n);
+    
+    wprintf(L"\n Insira sua mensagem: ");
+    sizeStr = getline(&str, &sizeStr, stdin);
+    widestr = malloc(sizeof(wchar_t) * (sizeStr + 1));
+    mbstowcs(widestr, str, sizeStr);
+    sizeStr = wcslen(widestr) - 1;
+    bits = codifica(widestr, codigos);
+    assert(bits > 0);
+
+    FILE* output = fopen("output.txt", "w");
+    mpz_set_ui(base, (unsigned long)bits);
+    mpz_powm(base, base, exp, mod);
+    auxStr = mpz_get_str(NULL, 16, base);
+    fprintf(output, "%d:\n", bits);
+    free(auxStr);
+
+    unsigned long tmp;
+    char bytes, aleat = 1;
+    unsigned int it = 0;
+
+    #ifdef DEBUG
+    wprintf(L"%d\n", codigos[cod(widestr[it])]);
+    for (int i = 0; i < sizeStr; i++) {
+        wprintf(L"%d ", cod(widestr[i]));
+    }
+    #endif
+    wprintf(L"\n");
     while (it < sizeStr) {
+        bytes = sizeof(unsigned long) - 1;
         tmp = 0;
-        tmp |= str[it];
+        tmp |= codigos[cod(widestr[it])];
         it++;
-        while (tmp < pub.n && it < sizeStr && aleat) {
-            tmp = tmp << 8;
-            tmp |= str[it];
-            it++;
+        while (aleat) {
+            if (it >= sizeStr || bytes == 0) {break;}
+            tmp = tmp << bits;
+            tmp |= codigos[cod(widestr[it++])];
+            // aleat = rand() % 2;
+            bytes--;
         }
 
         if (tmp >= pub.n) {
-            tmp = tmp >> 8;
+            tmp = tmp >> bits;
             it--;
         }
 
@@ -74,7 +101,7 @@ int main(int argc, char** argv) {
         fprintf(output, "%s:", auxStr);
         free(auxStr);
     }
-    printf("\n");
 
     free(str);
+    free(widestr);
 }
