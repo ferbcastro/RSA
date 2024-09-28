@@ -1,9 +1,7 @@
 #include "codificacao.h"
 #include <stddef.h>
 #include <string.h>
-#include <stdlib.h>
 #include <wchar.h>
-#include <stdio.h>
 
 /*
 void push(struct fila* f, struct nodo* nodo) {
@@ -128,7 +126,9 @@ void decodifica(struct letra dict[], wchar_t c, int *cod, int *tam) {
 #include <math.h>
 
 int cod(wchar_t caracter) {
-    if (caracter >= 0x41 && caracter <= 0x5a) {
+    if (caracter == L' ') {
+        return NUM_CODIGOS - 1;
+    } else if (caracter >= 0x41 && caracter <= 0x5a) {
         return caracter - L'A';
     } else if (caracter <= 0x7a) {
         return caracter - L'a' + 26;
@@ -138,7 +138,9 @@ int cod(wchar_t caracter) {
 }
 
 wchar_t decod(int numero) {
-    if (numero >= 0 && numero <= 25) {
+    if (numero == NUM_CODIGOS - 1) {
+        return L' ';
+    } else if (numero >= 0 && numero <= 25) {
         return numero + L'A';
     } else if (numero <= 51) {
         return numero + L'a' - 26;
@@ -160,10 +162,10 @@ char codifica(wchar_t* string, int* cods) {
     for (int i = 0; i < NUM_CODIGOS; i++) {
         if (freqs[i] > 0) {
             cods[i] = cont;
+            cont++;
             #ifdef DEBUG
             wprintf(L"i = %d cods[i] = %d", i, cods[i]);
             #endif
-            cont++;
         }
     }
 

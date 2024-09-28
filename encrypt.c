@@ -54,6 +54,7 @@ int main(int argc, char** argv) {
     
     wprintf(L"\n Insira sua mensagem: ");
     sizeStr = getline(&str, &sizeStr, stdin);
+    wprintf(L"\n");
     widestr = malloc(sizeof(wchar_t) * (sizeStr + 1));
     mbstowcs(widestr, str, sizeStr);
     sizeStr = wcslen(widestr) - 1;
@@ -92,9 +93,8 @@ int main(int argc, char** argv) {
     while (it < sizeStr) {
         bytes = sizeof(unsigned long) - 1;
         tmp = 0;
-        tmp |= codigos[cod(widestr[it])];
-        it++;
-        while (it < sizeStr && bytes > 0) {
+        tmp |= codigos[cod(widestr[it++])];
+        while (tmp < pub.n && it < sizeStr && bytes > 0) {
             tmp = tmp << bits;
             tmp |= codigos[cod(widestr[it++])];
             bytes--;

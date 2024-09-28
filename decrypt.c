@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     char* str = NULL, *ptr;
     wchar_t auxstr[sizeof(unsigned long)];
     size_t sizestr;
-    unsigned long bits = 0, it, cod, num;
+    unsigned long bits = 0, it, cod, num, mult;
     mpz_t base, exp, mod;
 
     mpz_init(base);
@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     mpz_set_ui(base, bits);
     mpz_powm(base, base, exp, mod);
     bits = mpz_get_ui(base);
-    bits = (1 << bits) - 1;
+    mult = (1 << bits) - 1;
 
     ptr += 2;
     while (*ptr != '\n') {
@@ -91,17 +91,18 @@ int main(int argc, char** argv) {
         codigos[it] = cod;
     }
 
-    #define DEBUG
+    //#define DEBUG
     #ifdef DEBUG
     printf("bits = %ld\n", bits);
     for (int i = 0; i < NUM_CODIGOS; i++) {
         printf("codigo[%d] = %d\n", i, codigos[i]);
     }
     #endif
-    char fimbloco;
+
+    char fimbloco, aux, i;
     sizestr = getline(&str, &sizestr, output);
     ptr = str;
-    it = 0;
+    wprintf(L" ");
     while (*ptr != '\n') {
         num = 0;
         for(; *ptr != ':'; ptr++) {
@@ -113,15 +114,32 @@ int main(int argc, char** argv) {
         mpz_powm(base, base, exp, mod);
         num = mpz_get_ui(base);
 
-        fimbloco = 0;
+        fimbloco = it = 0;
         while (!fimbloco) {
-            // codigo
+            aux = 0;
+            aux = num & mult;
+            num = num >> bits;
+            if (aux == 0) {
+                while (it--) {
+                    wprintf(L"%lc", auxstr[it]);
+                }
+                fimbloco = 1;
+            } else {
+                for (i = 0; i < NUM_CODIGOS; i++) {
+                    if (codigos[i] == aux) {
+                        break;
+                    }
+                }
+                auxstr[it] = decod(i);
+                it++;
+            }
         }    
 
         ptr++;
     }
+    wprintf(L"\n");
+    
     free(str);
-
     fclose(output);
     mpz_clear(base);
     mpz_clear(exp);
