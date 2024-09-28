@@ -7,8 +7,9 @@
 #include <getopt.h>
 #include <assert.h>
 #include <string.h>
+#include "codificacao.h"
 
-#define TAM_MAX 1025
+int codigos[NUM_CODIGOS];
 
 typedef unsigned long long ull;
 
@@ -17,70 +18,113 @@ struct PrivateKey {
     ull n;
 };
 
-int extended_gcd(int a, int b) {
-    int old_cofa, old_cofb, new_cofa, new_cofb;
-    int aux1, aux2, div;
-
-    old_cofa = 1;
-    old_cofb = 0;
-    new_cofa = 0;
-    new_cofb = 1;
-    while (b != 0) {
-        div = a / b;
-        aux1 = old_cofa - div * new_cofa;
-        aux2 = old_cofb - div * new_cofb;
-        old_cofa = new_cofa;
-        old_cofb = new_cofb;
-        new_cofa = aux1;
-        new_cofb = aux2;
-
-        aux1 = a % b;
-        a = b;
-        b = aux1; 
-    }
-
-    return old_cofb;
+int translateHex(char c) {
+    if (c >= 0x61 && c <= 0x66) {
+        return c - 'a' + 10;
+    } else {
+        return c - '0';
+    }  
 }
 
 int main(int argc, char** argv) {
-    struct PrivateKey privKey;
-    ull d, phi, primeP, primeQ;
-    char opt;
+    struct PrivateKey priv;
 
-    while ((opt = getopt(argc, argv, "p:q:d:e:")) != -1) {
+    int opt;
+    while ((opt = getopt(argc, argv, "e:n:")) != -1) {
         switch (opt) {
-            case 'p':
-                primeP = strtol(optarg, NULL, 10);
-                break;
-            case 'q':
-                primeQ = strtol(optarg, NULL, 10);
-                break;
-            case 'd':
-                d = strtol(optarg, NULL, 10);
+            case 'n':
+                priv.n = strtol(optarg, NULL, 10);
                 break;
             case 'e':
-                privKey.e = strtol(optarg, NULL, 10);
+                priv.e = strtol(optarg, NULL, 10);
                 break;
             default:
                 break;
         }
     }
 
-    privKey.n = primeP * primeQ;
-    phi = (primeP - 1) * (primeQ - 1);
+    char* str = NULL, *ptr;
+    wchar_t auxstr[sizeof(unsigned long)];
+    size_t sizestr;
+    unsigned long bits = 0, it, cod, num;
+    mpz_t base, exp, mod;
 
-    FILE* output = fopen("output.txt", "w");
-    assert(output != NULL);
-    char* str, aux[3];
-    size_t strSize;
-    getline(&str, &strSize, output);
-    wchar_t* wideStr = malloc(TAM_MAX * sizeof(wchar_t));
-    assert(wideStr != NULL);
+    mpz_init(base);
+    mpz_init(exp);
+    mpz_init(mod);
+    mpz_set_ui(exp, priv.e);
+    mpz_set_ui(mod, priv.n);
 
-    int j;
-    for (int i = 0; i < strSize;) {
-        j = i;
-        
+    FILE* output = fopen("output.txt", "r");
+    sizestr = getline(&str, &sizestr, output);
+    for(ptr = str; *ptr != ':'; ptr++) {
+        bits += translateHex(*ptr);
+        bits = bits << 4;
     }
+    bits = bits >> 4;
+    mpz_set_ui(base, bits);
+    mpz_powm(base, base, exp, mod);
+    bits = mpz_get_ui(base);
+    bits = (1 << bits) - 1;
+
+    ptr += 2;
+    while (*ptr != '\n') {
+        it = cod = 0;
+        for(; *ptr != ':'; ptr++) {
+            it += translateHex(*ptr);
+            it = it << 4;
+        }
+        it = it >> 4;
+        ptr++;
+
+        assert(*ptr != '\n');
+        for(; *ptr != ':'; ptr++) {
+            cod += translateHex(*ptr);
+            cod = cod << 4;
+        }
+        cod = cod >> 4;
+        mpz_set_ui(base, cod);
+        mpz_powm(base, base, exp, mod);
+        cod = mpz_get_ui(base);
+        ptr++;
+
+        codigos[it] = cod;
+    }
+
+    #define DEBUG
+    #ifdef DEBUG
+    printf("bits = %ld\n", bits);
+    for (int i = 0; i < NUM_CODIGOS; i++) {
+        printf("codigo[%d] = %d\n", i, codigos[i]);
+    }
+    #endif
+    char fimbloco;
+    sizestr = getline(&str, &sizestr, output);
+    ptr = str;
+    it = 0;
+    while (*ptr != '\n') {
+        num = 0;
+        for(; *ptr != ':'; ptr++) {
+            num += translateHex(*ptr);
+            num = num << 4;
+        }
+        num = num >> 4;
+        mpz_set_ui(base, num);
+        mpz_powm(base, base, exp, mod);
+        num = mpz_get_ui(base);
+
+        fimbloco = 0;
+        while (!fimbloco) {
+            // codigo
+        }    
+
+        ptr++;
+    }
+    free(str);
+
+    fclose(output);
+    mpz_clear(base);
+    mpz_clear(exp);
+    mpz_clear(mod);
 }
 

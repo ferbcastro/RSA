@@ -41,9 +41,10 @@ int main(int argc, char** argv) {
                 return 1;
         }
     }
+
     mpz_t base, exp, mod;
     char bits;
-    char *auxStr;
+    char *auxstr;
 
     mpz_init(base);
     mpz_init(exp);
@@ -62,12 +63,23 @@ int main(int argc, char** argv) {
     FILE* output = fopen("output.txt", "w");
     mpz_set_ui(base, (unsigned long)bits);
     mpz_powm(base, base, exp, mod);
-    auxStr = mpz_get_str(NULL, 16, base);
-    fprintf(output, "%d:\n", bits);
-    free(auxStr);
+    auxstr = mpz_get_str(NULL, 16, base);
+    fprintf(output, "%s::", auxstr);
+    free(auxstr);
+
+    for(int i = 0; i < NUM_CODIGOS; i++) {
+        if (codigos[i] != 0) {
+            mpz_set_ui(base, (unsigned long)codigos[i]);
+            mpz_powm(base, base, exp, mod);
+            auxstr = mpz_get_str(NULL, 16, base);
+            fprintf(output, "%x:%s:", i, auxstr);
+            free(auxstr);
+        }
+    }
+    fprintf(output, "\n");
 
     unsigned long tmp;
-    char bytes, aleat = 1;
+    char bytes;
     unsigned int it = 0;
 
     #ifdef DEBUG
@@ -76,17 +88,15 @@ int main(int argc, char** argv) {
         wprintf(L"%d ", cod(widestr[i]));
     }
     #endif
-    wprintf(L"\n");
+
     while (it < sizeStr) {
         bytes = sizeof(unsigned long) - 1;
         tmp = 0;
         tmp |= codigos[cod(widestr[it])];
         it++;
-        while (aleat) {
-            if (it >= sizeStr || bytes == 0) {break;}
+        while (it < sizeStr && bytes > 0) {
             tmp = tmp << bits;
             tmp |= codigos[cod(widestr[it++])];
-            // aleat = rand() % 2;
             bytes--;
         }
 
@@ -97,11 +107,16 @@ int main(int argc, char** argv) {
 
         mpz_set_ui(base, tmp);
         mpz_powm(base, base, exp, mod);
-        auxStr = mpz_get_str(NULL, 16, base);
-        fprintf(output, "%s:", auxStr);
-        free(auxStr);
+        auxstr = mpz_get_str(NULL, 16, base);
+        fprintf(output, "%s:", auxstr);
+        free(auxstr);
     }
+    fprintf(output, "\n");
 
+    mpz_clear(base);
+    mpz_clear(exp);
+    mpz_clear(mod);
     free(str);
     free(widestr);
+    fclose(output);
 }

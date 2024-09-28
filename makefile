@@ -10,9 +10,9 @@ all: msg rsa
 msg:
 	@echo "compiling..."
 
-rsa: $(OBJS2)
+rsa: $(OBJS2) $(OBJS1)
 	$(CC) -o encrypt $(OBJS2) $(CFLAGS) $(LDFLAGS)
-#	$(CC) -o decrypt $(OBJS1) $(CFLAGS) $(LDFLAGS)
+	$(CC) -o decrypt $(OBJS1) $(CFLAGS) $(LDFLAGS)
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -c $< -o $@

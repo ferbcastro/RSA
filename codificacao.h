@@ -28,3 +28,4 @@ struct fila {
 
 char codifica(wchar_t* string, int* cods);
 int cod(wchar_t caracter);
+wchar_t decod(int numero);
