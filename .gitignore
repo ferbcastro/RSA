@@ -1,2 +1,5 @@
-rsa
-output.txt
+*.txt
+*.o
+encrypt
+decrypt
+privkey

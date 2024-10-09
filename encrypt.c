@@ -24,7 +24,6 @@ int main(int argc, char** argv) {
     size_t sizeStr = 0;
     PublicKey pub;
 
-    srand(time(NULL));
     setlocale(LC_ALL, "");
 
     int opt;
@@ -54,13 +53,18 @@ int main(int argc, char** argv) {
     
     wprintf(L"\n Insira sua mensagem: ");
     sizeStr = getline(&str, &sizeStr, stdin);
+    str[sizeStr - 1] = '\0';
     wprintf(L"\n");
+
+    // Transforma string para formato wide, obtem codificacao e o numero minimo de
+    // bits necessario
     widestr = malloc(sizeof(wchar_t) * (sizeStr + 1));
     mbstowcs(widestr, str, sizeStr);
-    sizeStr = wcslen(widestr) - 1;
+    sizeStr = wcslen(widestr);
     bits = codifica(widestr, codigos);
     assert(bits > 0);
 
+    // Numero de bits eh criptofado e impresso em 'output.txt' em formato hexadecimal
     FILE* output = fopen("output.txt", "w");
     mpz_set_ui(base, (unsigned long)bits);
     mpz_powm(base, base, exp, mod);
@@ -68,6 +72,7 @@ int main(int argc, char** argv) {
     fprintf(output, "%s::", auxstr);
     free(auxstr);
 
+    // Codificacao criada eh criptografada e impressa no arquivo (posicao:codigo:)
     for(int i = 0; i < NUM_CODIGOS; i++) {
         if (codigos[i] != 0) {
             mpz_set_ui(base, (unsigned long)codigos[i]);
@@ -90,6 +95,9 @@ int main(int argc, char** argv) {
     }
     #endif
 
+    // Insere o maximo possivel de simbolos em um ull
+    // Criptografa o valor no ull
+    // Imprime o bloco formado em hexadecimal no arquivo (bloco:)
     while (it < sizeStr) {
         bytes = sizeof(unsigned long) - 1;
         tmp = 0;
