@@ -2,30 +2,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gmp.h>
+#include <string.h>
 #include <time.h>
 #include <wchar.h>
 #include <getopt.h>
 #include <assert.h>
 #include <locale.h>
+#include "encrypt.h"
 #include "codificacao.h"
 
-int codigos[NUM_CODIGOS];
 
-typedef unsigned long long ull;
-
-typedef struct PublicKey {
-    ull d;
-    ull n;
-} PublicKey;
-
-int main(int argc, char** argv) {
-    char* str = NULL;
+char* encrypt (const char* str, const char* input_n, const char* input_d) {
     wchar_t* widestr;
     size_t sizeStr = 0;
     PublicKey pub;
-
-    setlocale(LC_ALL, "");
-
+    int codigos[NUM_CODIGOS];
+    memset(codigos, 0, NUM_CODIGOS * sizeof(int));
+    
+    /*
     int opt;
     while ((opt = getopt(argc, argv, "n:d:")) != -1) {
         switch (opt) {
@@ -40,25 +34,31 @@ int main(int argc, char** argv) {
                 return 1;
         }
     }
-
+    */
     mpz_t base, exp, mod;
     char bits;
-    char *auxstr;
+    char *auxstr, *output_str;
+    output_str = malloc(1024);
+    output_str[0] = '\0';
 
     mpz_init(base);
     mpz_init(exp);
     mpz_init(mod);
+
+    pub.n = strtoul(input_n, NULL, 10);
+    pub.d = strtoul(input_d, NULL, 10);
     mpz_set_ui(exp, pub.d);
     mpz_set_ui(mod, pub.n);
-    
+    /*
     wprintf(L"\n Insira sua mensagem: ");
-    sizeStr = getline(&str, &sizeStr, stdin);
     str[sizeStr - 1] = '\0';
     wprintf(L"\n");
+    */
 
     // Transforma string para formato wide, obtem codificacao e o numero minimo de
     // bits necessario
-    widestr = malloc(sizeof(wchar_t) * (sizeStr + 1));
+    sizeStr = strlen(str) + 1;
+    widestr = malloc(sizeof(wchar_t) * (sizeStr));
     mbstowcs(widestr, str, sizeStr);
     sizeStr = wcslen(widestr);
     bits = codifica(widestr, codigos);
@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
     unsigned long tmp;
     char bytes;
     unsigned int it = 0;
-
+    
     #ifdef DEBUG
     wprintf(L"%d\n", codigos[cod(widestr[it])]);
     for (int i = 0; i < sizeStr; i++) {
@@ -116,6 +116,7 @@ int main(int argc, char** argv) {
         mpz_set_ui(base, tmp);
         mpz_powm(base, base, exp, mod);
         auxstr = mpz_get_str(NULL, 16, base);
+        strcat(output_str, auxstr);
         fprintf(output, "%s:", auxstr);
         free(auxstr);
     }
@@ -124,7 +125,8 @@ int main(int argc, char** argv) {
     mpz_clear(base);
     mpz_clear(exp);
     mpz_clear(mod);
-    free(str);
     free(widestr);
     fclose(output);
+
+    return output_str;
 }

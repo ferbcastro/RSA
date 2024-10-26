@@ -1,19 +1,18 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -g
 LDFLAGS = -lgmp -lm
+GTKFLAGS = `pkg-config gtk+-3.0 --libs --cflags`
 
-OBJS1 = decrypt.o codificacao.o
-OBJS2 = encrypt.o codificacao.o
+OBJS = decrypt.o encrypt.o codificacao.o
 
 all: msg rsa
 
 msg:
 	@echo "compiling..."
 
-rsa: $(OBJS2) $(OBJS1)
-	$(CC) -o encrypt $(OBJS2) $(CFLAGS) $(LDFLAGS)
-	$(CC) -o decrypt $(OBJS1) $(CFLAGS) $(LDFLAGS)
+rsa: $(OBJS)
 	$(CC) -o privkey privKey.c
+	$(CC) -o ui ui.c $(OBJS) $(CFLAGS) $(LDFLAGS) $(GTKFLAGS)
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -c $< -o $@

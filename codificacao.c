@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <wchar.h>
+//#include <stdio.h>
 
 #include <math.h>
 
@@ -51,10 +52,11 @@ char codifica(wchar_t* string, int* cods) {
             cont++;
             cods[i] = cont;
             #ifdef DEBUG
-            wprintf(L"i = %d cods[i] = %d", i, cods[i]);
+            printf("i = %d cods[i] = %d\n", i, cods[i]);
             #endif
         }
     }
+
 
     if (cont == 0) {
         return 0;

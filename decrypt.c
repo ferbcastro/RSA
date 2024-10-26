@@ -8,15 +8,7 @@
 #include <assert.h>
 #include <string.h>
 #include "codificacao.h"
-
-int codigos[NUM_CODIGOS];
-
-typedef unsigned long long ull;
-
-struct PrivateKey {
-    ull e;
-    ull n;
-};
+#include "decrypt.h"
 
 int translateHex(char c) {
     if (c >= 0x61 && c <= 0x66) {
@@ -26,11 +18,12 @@ int translateHex(char c) {
     }  
 }
 
-int main(int argc, char** argv) {
+char* decrypt(const char* input_n, const char* input_e) {
     struct PrivateKey priv;
+    int codigos[NUM_CODIGOS];
+    memset(codigos, 0, NUM_CODIGOS * sizeof(int));
 
-    setlocale(LC_ALL, "");
-
+    /*
     int opt;
     while ((opt = getopt(argc, argv, "e:n:")) != -1) {
         switch (opt) {
@@ -44,16 +37,21 @@ int main(int argc, char** argv) {
                 return 1;
         }
     }
+    */
 
-    char* str = NULL, *ptr;
+    char* str = NULL, *ptr, output_str_aux[64];
+    char* output_str = malloc(1024);
     wchar_t auxstr[1024];
     size_t sizestr;
     unsigned long bits = 0, it, cod, num, mult;
     mpz_t base, exp, mod;
 
+    output_str[0] = '\0';
     mpz_init(base);
     mpz_init(exp);
     mpz_init(mod);
+    priv.e = strtoull(input_e, NULL, 10);
+    priv.n = strtoull(input_n, NULL, 10);
     mpz_set_ui(exp, priv.e);
     mpz_set_ui(mod, priv.n);
 
@@ -92,6 +90,8 @@ int main(int argc, char** argv) {
 
         codigos[it] = cod;
     }
+    free(str);
+    str = NULL;
 
     #ifdef DEBUG
     printf("bits = %ld\n", bits);
@@ -101,11 +101,9 @@ int main(int argc, char** argv) {
     #endif
 
     int fimbloco, aux, i;
-    free(str);
-    str = NULL;
     sizestr = getline(&str, &sizestr, output);
     ptr = str;
-    wprintf(L" ");
+    // wprintf(L" ");
     while (*ptr != '\n') {
         // Bloco de letras eh descriptografado
         num = 0;
@@ -120,15 +118,26 @@ int main(int argc, char** argv) {
         // O bloco eh separado nas letras
         // A convencao eh terminar com o codigo 0x0 ou maximo 8 bytes
         // O bloco entao eh impresso ao contrario
+        wchar_t temp;
         fimbloco = it = 0;
         while (!fimbloco) {
             aux = 0;
             aux = num & mult;
             num = num >> bits;
             if (aux == 0) {
-                while (it--) {
-                    wprintf(L"%lc", auxstr[it]);
+                if (it != 0) {
+                    i = --it;
+                    while (i > it / 2) {
+                        temp = auxstr[i];
+                        auxstr[i] = auxstr[it - i];
+                        auxstr[it - i] = temp;
+                        i--;
+                    }
+                    auxstr[it + 1] = '\0';
+                    wcstombs(output_str_aux, auxstr, 64);
+                    strcat(output_str, output_str_aux);
                 }
+                
                 fimbloco = 1;
             } else {
                 for (i = 0; i < NUM_CODIGOS; i++) {
@@ -143,12 +152,13 @@ int main(int argc, char** argv) {
 
         ptr++;
     }
-    wprintf(L"\n");
+    //wprintf(L"\n");
     
     free(str);
     fclose(output);
     mpz_clear(base);
     mpz_clear(exp);
     mpz_clear(mod);
-}
 
+    return output_str;
+}
